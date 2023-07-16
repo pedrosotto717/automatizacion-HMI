@@ -103,21 +103,23 @@ function start() {
       photoSensor,
       () => {
         if (slideAnimation.playState === "running") {
+
           ledStandBy.classList.add("active");
           activePhotoSensor();
           slideAnimation.pause();
           stopAnimationBelt();
           startTimer(3000, ".timer__display-3", () => {});
-
+          
           setTimeout(() => {
             activeValve();
             box.classList.add("filled");
           }, 3100);
-
+          
           setTimeout(() => {
             activeBottleFilledSensor();
             inactiveValve();
             document.querySelector(".timer__display-3").innerHTML = "0000 ms";
+            ledStandBy.classList.remove("active");
             ledFull.classList.add("active");
             startTimer(2000, ".timer__display-2", () => {});
           }, STAND_BY - 800);
@@ -159,6 +161,7 @@ function setAnimationTranslate() {
 function playAllAnimations() {
   slideAnimation.play();
   startAnimationBelt();
+  ledRun.classList.add("active");
 
   setTimeout(() => {
     inactiveBottleFilledSensor();
@@ -168,6 +171,7 @@ function playAllAnimations() {
 }
 
 function stopAnimationBelt() {
+  ledRun.classList.remove("active");
   gear.forEach((gear) => (gear.style.animationPlayState = "paused"));
   thereAreTheBreaks.style.animationPlayState = "paused";
   thereAreTheBreaksAgain.style.animationPlayState = "paused";

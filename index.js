@@ -9,6 +9,11 @@ let gear = null;
 let thereAreTheBreaks = null;
 let thereAreTheBreaksAgain = null;
 const STAND_BY = 8000;
+let buttonStart = null;
+
+let ledRun = null;
+let ledStandBy = null;
+let ledFull = null;
 
 document.addEventListener("DOMContentLoaded", function () {
   gear = document.querySelectorAll(".gear");
@@ -21,23 +26,51 @@ document.addEventListener("DOMContentLoaded", function () {
   endMachine = document.querySelector("#end-machine");
   milkSensor = document.querySelector(".milk-sensor");
   valve = document.querySelector(".valve");
+  buttonStart = document.querySelector("#checkbox-start");
+
+  ledRun = document.querySelector("#led-run .led");
+  ledStandBy = document.querySelector("#led-stand-by .led");
+  ledFull = document.querySelector("#led-full .led");
 
   setAnimationTranslate();
   stopAnimationBelt();
-  setTimeout(() => {
-    start();
-  }, 1000);
+
+  buttonStart.addEventListener("click", (ev) => {
+    if (ev.target.checked) {
+      setTimeout(() => {
+        start();
+        ledRun.classList.add("active");
+      }, 800);
+    } else {
+      stopMachine();
+    }
+  });
 });
 
 window.addEventListener("visibilitychange", (ev) => {
-  if(ev.target.hidden){
-    slideAnimation.cancel();
-    console.log('pausada la produccion')
-    inactiveBottleFilledSensor();
-    inactivePhotoSensor();
-    stopAnimationBelt()
+  if (ev.target.hidden) {
+    stopMachine();
   }
 });
+
+function stopMachine() {
+  slideAnimation.cancel();
+  inactiveBottleFilledSensor();
+  inactivePhotoSensor();
+  stopAnimationBelt();
+  ledRun.classList.remove("active");
+  ledStandBy.classList.remove("active");
+  ledFull.classList.remove("active");
+  buttonStart.checked = false;
+
+  const allBoxesToClear = document.querySelectorAll(".box--wrapper");
+
+  if (allBoxesToClear.length !== 0) {
+    allBoxesToClear.forEach((box) => {
+      box.classList.remove("filled");
+    });
+  }
+}
 
 function start() {
   slideAnimation.play();
@@ -69,28 +102,33 @@ function start() {
       box,
       photoSensor,
       () => {
-
         if (slideAnimation.playState === "running") {
+          ledStandBy.classList.add("active");
           activePhotoSensor();
           slideAnimation.pause();
           stopAnimationBelt();
-          
+          startTimer(3000, ".timer__display-3", () => {});
+
           setTimeout(() => {
             activeValve();
-            box.classList.add("filled"); 
-          }, 3000);
+            box.classList.add("filled");
+          }, 3100);
 
           setTimeout(() => {
             activeBottleFilledSensor();
             inactiveValve();
+            document.querySelector(".timer__display-3").innerHTML = "0000 ms";
+            ledFull.classList.add("active");
+            startTimer(2000, ".timer__display-2", () => {});
           }, STAND_BY - 800);
 
           setTimeout(() => {
             if (slideAnimation.playState === "paused") {
               playAllAnimations();
+              document.querySelector(".timer__display-2").innerHTML = "0000 ms";
+              ledFull.classList.remove("active");
             }
           }, STAND_BY + 1800);
-          
         }
       },
       STAND_BY + 1000
@@ -125,6 +163,7 @@ function playAllAnimations() {
   setTimeout(() => {
     inactiveBottleFilledSensor();
     inactivePhotoSensor();
+    ledStandBy.classList.remove("active");
   }, 200);
 }
 
@@ -176,8 +215,6 @@ const inactiveValve = () => {
   }
 };
 
-
-
 function detectIntersection(
   element1,
   element2,
@@ -224,4 +261,26 @@ function detectIntersection(
       window.cancelAnimationFrame(animationId);
     },
   };
+}
+
+function startTimer(duration, selector, callback) {
+  let timer = 0;
+
+  let interval = setInterval(function () {
+    let milliseconds = timer;
+
+    document.querySelector(selector).textContent =
+      milliseconds < 100
+        ? `00${milliseconds} ms`
+        : milliseconds < 1000
+        ? `0${milliseconds} ms`
+        : `${milliseconds} ms`;
+
+    if (timer >= duration) {
+      clearInterval(interval);
+      callback();
+    }
+
+    timer += 10;
+  }, 10);
 }
